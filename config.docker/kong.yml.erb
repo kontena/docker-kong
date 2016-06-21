@@ -1,11 +1,42 @@
+<%
+require 'socket'
+require 'ipaddr'
+SIOCGIFADDR = 0x8915
+def interface_ip(iface)
+  sock = UDPSocket.new
+  buf = [iface,""].pack('a16h16')
+  sock.ioctl(SIOCGIFADDR, buf);
+  sock.close
+  buf[20..24].unpack("CCCC").join(".")
+rescue Errno::ENODEV
+  '0.0.0.0'
+end
+%>
 postgres:
-  host: "kong-database"
-  port: 5432
-  database: kong
+  host: <%= ENV['POSTGRES_URL'] || 'kong-database' %>
+  port: <%= ENV['POSTGRES_PORT'] || '5432' %>
+  database: <%= ENV['DB_NAME'] || 'kong' %>
   user: kong
 cassandra:
-  contact_points:
-    - "kong-database:9042"
+  contact_points: <% if ENV['CASSANDRA_URL'] %><% ENV['CASSANDRA_URL'].split(',').each do |url| %>
+    - "<%= url %>:9042"
+  <% end %><% else %>
+   - 'kong-database'
+   <% end %>
+<% if ENV['PROXY_LISTEN'] %>
+proxy_listen: ENV['PROXY_LISTEN']
+<% end %>
+<% if ENV['PROXY_LISTEN_SSL'] %>
+proxy_listen_ssl: ENV['PROXY_LISTEN_SSL']
+<% end %>
+<% if ENV['CLUSTER_LISTEN'] == 'weave' %>
+cluster_listen: "<%= interface_ip('ethwe') %>:7946"
+cluster_listen_rpc: "<%= interface_ip('ethwe') %>:7373"
+<% elsif ENV['CLUSTER_LISTEN'] != nil %>
+cluster_listen: "<%= ENV['CLUSTER_LISTEN'] %>:7946"
+cluster_listen_rpc: "<%= ENV['CLUSTER_LISTEN'] %>:7373"
+<% end %>
+database: <%= ENV['DATABASE'] %>
 nginx: |
   {{user}}
   worker_processes auto;

@@ -1,0 +1,13 @@
+cassandra:
+  image: cassandra:2.2
+
+kong:
+  build: .
+  environment:
+    - DATABASE=cassandra
+    - CASSANDRA_URL=kong-database
+  links:
+    - cassandra:kong-database
+  ports:
+    - 8000:8000
+    - 8001:8001

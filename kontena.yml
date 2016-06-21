@@ -1,0 +1,16 @@
+cassandra:
+  stateful: true
+  image: cassandra:2.2
+  instances: 2
+  deploy:
+    wait_for_port: 9042
+  environment:
+    - CASSANDRA_SEEDS=%{project}-cassandra-1
+
+kong:
+  image: registry.kontena.local/kong:latest
+  environment:
+    - DATABASE=cassandra
+    - KONG_LISTEN_ADDRESS=weave
+    - CASSANDRA_URL=%{project}-cassandra-1,%{project}-cassandra-2
+    - CLUSTER_LISTEN=weave
