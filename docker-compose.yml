@@ -1,13 +1,21 @@
-cassandra:
-  image: cassandra:2.2
-
-kong:
-  build: .
-  environment:
-    - DATABASE=cassandra
-    - CASSANDRA_URL=kong-database
-  links:
-    - cassandra:kong-database
-  ports:
-    - 8000:8000
-    - 8001:8001
+version: '2'
+services:
+  kong-database:
+    image: postgres:9.4-alpine
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_DB=kong
+  kong:
+    build: .
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-database
+      - KONG_PG_USER=kong
+    links:
+      - kong-database:kong-database
+    ports:
+      - 8000:8000
+      - 8001:8001
+    restart: unless-stopped

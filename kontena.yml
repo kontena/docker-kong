@@ -1,12 +1,104 @@
-database:
-  image: postgres:9.4
-
-  environment:
-    - POSTGRES_USER=kong
-    - POSTGRES_DB=kong
-kong:
-  build: .
-  image: registry.kontena.local/kong:latest
-  environment:
-    - KONG_PG_HOST=${project}-database
-    - KONG_PG_DATABASE=kong
+stack: kong
+version: 0.1.0
+expose: api
+variables:
+  bundle_postgres:
+    type: boolean
+    default: true
+    from:
+      env: BUNDLE_POSTGRES
+      prompt: Use bundled postgres?
+  postgres_host:
+    skip_if:
+      - bundle_postgres
+    type: string
+    default: postgres
+    from:
+      env: PG_HOST
+      prompt: PostgreSQL Host
+  postgres_user:
+    skip_if:
+      - bundle_postgres
+    type: string
+    default: kong
+    from:
+      env: PG_USER
+      prompt: PostgreSQL User
+  postgres_password:
+    skip_if:
+      - bundle_postgres
+    type: string
+    default: kong
+    required: false
+    from:
+      env: PG_PASSWORD
+      prompt: PostgreSQL Password
+  postgres_db:
+    skip_if:
+      - bundle_postgres
+    type: string
+    default: kong
+    from:
+      env: PG_USER
+      prompt: PostgreSQL Database
+  loadbalancer:
+    type: string
+    from:
+      env: LOADBALANCER
+      service_link:
+        prompt: Choose a loadbalancer
+        image: kontena/lb
+  virtual_hosts:
+    only_if:
+      - loadbalancer
+    type: string
+    from:
+      env: VIRTUAL_HOSTS
+      prompt: Domains to point to Kong
+  version:
+    type: string
+    default: 0.10.2
+    from:
+      env: KONG_VERSION
+      prompt: Kong version to use
+  bundle_dashboard:
+    type: boolean
+    default: true
+    from:
+      env: BUNDLE_DASHBOARD
+      prompt: Include Kong Dashboard?
+services:
+  api:
+    build:
+      context: .
+      args:
+        - KONG_VERSION=${version}
+    image: "kontena/kong:${version}"
+    environment:
+      - KONG_DATABASE=postgres
+      # {% if bundle_postgres %}
+      - KONG_PG_HOST=postgres.${STACK}.${GRID}.kontena.local
+      - KONG_PG_DATABASE=kong
+      - KONG_PG_USER=kong
+      # {% else %}
+      - KONG_PG_HOST=${postgres_host}
+      - KONG_PG_USER=${postgres_user}
+      - KONG_PG_PASSWORD=${postgres_password}
+      - KONG_PG_DATABASE=${postgres_db}
+      # {% endif %}
+      - KONTENA_LB_INTERNAL_PORT=8000
+      - KONTENA_LB_VIRTUAL_HOSTS=${virtual_hosts}
+    links:
+      - ${loadbalancer}
+  # {% if bundle_postgres %}
+  postgres:
+    image: postgres:9.6-alpine
+    stateful: true
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_DB=kong
+  # {% endif %}
+  # {% if bundle_dashboard %}
+  dashboard:
+    image: pgbi/kong-dashboard
+  # {% endif %}
