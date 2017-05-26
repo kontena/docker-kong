@@ -1,5 +1,6 @@
-stack: kong
-version: 0.1.0
+stack: kontena/kong
+version: 0.1.2
+description: Kong API gateway with PostgreSQL
 expose: api
 variables:
   bundle_postgres:
@@ -41,16 +42,9 @@ variables:
     from:
       env: PG_USER
       prompt: PostgreSQL Database
-  use_loadbalancer:
-    type: boolean
-    default: true
-    from:
-      env: USE_LOADBALANCER
-      prompt: Use loadbalancer?
   loadbalancer:
-    only_if:
-      - use_loadbalancer
     type: string
+    required: false
     from:
       env: LOADBALANCER
       service_link:
@@ -74,7 +68,7 @@ variables:
     default: true
     from:
       env: BUNDLE_DASHBOARD
-      prompt: Include Kong Dashboard?
+      prompt: Deploy Kong Dashboard?
 services:
   api:
     build:
@@ -94,7 +88,7 @@ services:
       - KONG_PG_PASSWORD=${postgres_password}
       - KONG_PG_DATABASE=${postgres_db}
       # {% endif %}
-      # {% if use_loadbalancer %}
+      # {% if loadbalancer %}
       - KONTENA_LB_INTERNAL_PORT=8000
       - KONTENA_LB_VIRTUAL_HOSTS=${virtual_hosts}
     links:
