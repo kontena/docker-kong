@@ -1,5 +1,5 @@
 stack: kontena/kong
-version: 0.1.2
+version: 0.1.5
 description: Kong API gateway with PostgreSQL
 expose: api
 variables:
@@ -40,7 +40,7 @@ variables:
     type: string
     default: kong
     from:
-      env: PG_USER
+      env: PG_DATABASE
       prompt: PostgreSQL Database
   loadbalancer:
     type: string
