@@ -26,14 +26,14 @@ variables:
       env: PG_USER
       prompt: PostgreSQL User
   postgres_password:
-    skip_if:
-      - bundle_postgres
     type: string
-    default: kong
-    required: false
     from:
+      vault: ${STACK}-postgres-password
       env: PG_PASSWORD
-      prompt: PostgreSQL Password
+      prompt: Postgres password? (or emtpy to generate random)
+      random_string: 32
+    to:
+      vault: ${STACK}-postgres-password
   postgres_db:
     skip_if:
       - bundle_postgres
@@ -85,7 +85,6 @@ services:
       # {% else %}
       - KONG_PG_HOST=${postgres_host}
       - KONG_PG_USER=${postgres_user}
-      - KONG_PG_PASSWORD=${postgres_password}
       - KONG_PG_DATABASE=${postgres_db}
       # {% endif %}
       # {% if loadbalancer %}
@@ -94,6 +93,10 @@ services:
     links:
       - ${loadbalancer}
       # {% endif %}
+    secrets:
+      - secret: ${STACK}-postgres-password
+        name: KONG_PG_PASSWORD
+        type: env
   # {% if bundle_postgres %}
   postgres:
     image: postgres:9.6-alpine
@@ -101,6 +104,10 @@ services:
     environment:
       - POSTGRES_USER=kong
       - POSTGRES_DB=kong
+    secrets:
+      - secret: ${STACK}-postgres-password
+        name: POSTGRES_PASSWORD
+        type: env
   # {% endif %}
   # {% if bundle_dashboard %}
   dashboard:
