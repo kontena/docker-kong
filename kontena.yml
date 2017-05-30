@@ -30,7 +30,7 @@ variables:
     from:
       vault: ${STACK}-postgres-password
       env: PG_PASSWORD
-      prompt: Postgres password? (or emtpy to generate random)
+      prompt: Postgres password? (or empty to generate random)
       random_string: 32
     to:
       vault: ${STACK}-postgres-password
